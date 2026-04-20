@@ -1,9 +1,10 @@
 const CATEGORY_COLORS: Record<string, string> = {
-  결제: 'bg-yellow-100 text-yellow-800',
-  배송: 'bg-blue-100 text-blue-800',
-  환불: 'bg-red-100 text-red-800',
+  계약: 'bg-blue-100 text-blue-800',
+  견적: 'bg-cyan-100 text-cyan-800',
+  개발: 'bg-indigo-100 text-indigo-800',
+  유지보수: 'bg-green-100 text-green-800',
+  장애: 'bg-red-100 text-red-800',
   기술지원: 'bg-purple-100 text-purple-800',
-  계정: 'bg-green-100 text-green-800',
   기타: 'bg-gray-100 text-gray-700',
 };
 

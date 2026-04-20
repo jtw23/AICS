@@ -10,9 +10,33 @@ CREATE TABLE IF NOT EXISTS users (
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
+CREATE TABLE IF NOT EXISTS clients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_code TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  department TEXT NOT NULL CHECK(department IN ('개발팀','기획팀','디자인팀')),
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS client_assignments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id INTEGER NOT NULL,
+  employee_id INTEGER NOT NULL,
+  UNIQUE(client_id),
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS inquiries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
+  client_id INTEGER,
   content_masked TEXT NOT NULL,
   category TEXT,
   category_confidence REAL,
@@ -20,7 +44,8 @@ CREATE TABLE IF NOT EXISTS inquiries (
   summary TEXT,
   embedding BLOB,
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
 CREATE TABLE IF NOT EXISTS drafts (
@@ -74,4 +99,4 @@ CREATE TRIGGER IF NOT EXISTS inquiries_fts_delete
   END;
 
 INSERT OR IGNORE INTO assignees (category) VALUES
-  ('결제'), ('배송'), ('환불'), ('기술지원'), ('계정'), ('기타');
+  ('계약'), ('견적'), ('개발'), ('유지보수'), ('장애'), ('기술지원'), ('기타');

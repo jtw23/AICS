@@ -13,7 +13,7 @@ router.use(authenticate);
 
 // POST /api/inquiry/process
 router.post('/process', async (req: AuthRequest, res: Response) => {
-  const { content, tone = '공식' } = req.body as { content: string; tone?: ToneType };
+  const { content, tone = '공식', client_id } = req.body as { content: string; tone?: ToneType; client_id?: number | null };
 
   if (!content?.trim()) {
     res.status(400).json({ error: '문의 내용을 입력하세요.' });
@@ -58,10 +58,10 @@ router.post('/process', async (req: AuthRequest, res: Response) => {
     // DB 저장
     const insertResult = db
       .prepare(
-        `INSERT INTO inquiries (user_id, content_masked, category, category_confidence, tone, summary, embedding)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO inquiries (user_id, client_id, content_masked, category, category_confidence, tone, summary, embedding)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(req.user!.userId, masked, category, confidence, tone, summary, embeddingBuf);
+      .run(req.user!.userId, client_id ?? null, masked, category, confidence, tone, summary, embeddingBuf);
 
     const inquiryId = insertResult.lastInsertRowid as number;
 

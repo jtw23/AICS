@@ -7,11 +7,18 @@ interface ClassifyResult {
   summary: string;
 }
 
-const CATEGORIES: InquiryCategory[] = ['결제', '배송', '환불', '기술지원', '계정', '기타'];
+const CATEGORIES: InquiryCategory[] = ['계약', '견적', '개발', '유지보수', '장애', '기술지원', '기타'];
 
-const SYSTEM_PROMPT = `당신은 고객 문의를 분류하는 전문가입니다.
+const SYSTEM_PROMPT = `당신은 웹 개발 / SI / SM 회사의 고객 문의를 분류하는 전문가입니다.
 주어진 고객 문의를 다음 카테고리 중 하나로 분류하고, 간략한 요약을 제공하세요.
 카테고리: ${CATEGORIES.join(', ')}
+- 계약: 계약 체결·변경·해지 관련
+- 견적: 개발 또는 유지보수 견적 요청
+- 개발: 신규 기능 개발·추가 요청
+- 유지보수: 기존 시스템 운영·수정·관리
+- 장애: 시스템 오류·버그·서비스 중단
+- 기술지원: 사용법·설정·운영 문의
+- 기타: 위 분류에 해당하지 않는 문의
 
 반드시 다음 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {"category":"카테고리명","confidence":0.95,"summary":"문의 내용 1~2줄 요약"}`;

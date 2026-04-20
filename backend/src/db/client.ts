@@ -14,16 +14,117 @@ export function getDb(): Database.Database {
     const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
     db.exec(schema);
 
-    // 마이그레이션: discord_webhook → notion_database_id
-    try {
-      db.exec('ALTER TABLE assignees ADD COLUMN notion_database_id TEXT');
-    } catch (_) {
-      // 이미 존재하는 경우 무시
+    // 구 컬럼 마이그레이션
+    try { db.exec('ALTER TABLE assignees ADD COLUMN notion_database_id TEXT'); } catch (_) {}
+    try { db.exec('ALTER TABLE assignees DROP COLUMN discord_webhook'); } catch (_) {}
+    try { db.exec('ALTER TABLE assignees ADD COLUMN notion_user_id TEXT'); } catch (_) {}
+
+    // inquiries에 client_id 추가
+    try { db.exec('ALTER TABLE inquiries ADD COLUMN client_id INTEGER REFERENCES clients(id)'); } catch (_) {}
+
+    // 구 카테고리 삭제 → 새 카테고리로 교체
+    db.exec(`DELETE FROM assignees WHERE category IN ('결제','배송','환불','계정')`);
+    const insertCat = db.prepare('INSERT OR IGNORE INTO assignees (category) VALUES (?)');
+    for (const cat of ['계약','견적','개발','유지보수','장애','기술지원','기타']) {
+      insertCat.run(cat);
     }
-    try {
-      db.exec('ALTER TABLE assignees DROP COLUMN discord_webhook');
-    } catch (_) {
-      // 존재하지 않거나 이미 제거된 경우 무시
+
+    // 직원 시드
+    const empCount = (db.prepare('SELECT COUNT(*) as c FROM employees').get() as { c: number }).c;
+    if (empCount === 0) {
+      const ins = db.prepare('INSERT INTO employees (name, department) VALUES (?, ?)');
+      db.transaction(() => {
+        for (const name of ['이상진','김희철','조태웅','구범석','박종길','한수현','윤종구','김주희','윤원태']) {
+          ins.run(name, '개발팀');
+        }
+        for (const name of ['한승현','박지혜','최명환','주민성','박지훈']) {
+          ins.run(name, '기획팀');
+        }
+        for (const name of ['김찬기','최서희','윤주희','류정미']) {
+          ins.run(name, '디자인팀');
+        }
+      })();
+    }
+
+    // 고객사 시드
+    const clientCount = (db.prepare('SELECT COUNT(*) as c FROM clients').get() as { c: number }).c;
+    if (clientCount === 0) {
+      const insClient = db.prepare('INSERT INTO clients (client_code, name) VALUES (?, ?)');
+      const insAssign = db.prepare(`
+        INSERT OR IGNORE INTO client_assignments (client_id, employee_id)
+        SELECT ?, id FROM employees WHERE name = ?
+      `);
+
+      const clientData: [string, string, string][] = [
+        ['C001', '부산시 정비사업', '이상진'],
+        ['C002', '학교지원서비스(BSSS)', '이상진'],
+        ['C003', 'LS일렉트릭', '이상진'],
+        ['C004', '오토닉스', '이상진'],
+        ['C005', '부산방과후(6월 종료)', '김희철'],
+        ['C006', '충북인사', '조태웅'],
+        ['C007', '울산방과후', '구범석'],
+        ['C008', 'BIC(인디게임 페스티벌)', '박종길'],
+        ['C009', '네이버', '한수현'],
+        ['C010', '국립부산과학관', '이상진'],
+        ['C011', '도시정보재생종합시스템', '이상진'],
+        ['C012', '다모아', '이상진'],
+        ['C013', '창원대 공동실험실습관', '이상진'],
+        ['C014', '지산학', '조태웅'],
+        ['C015', '장애인일자리정보망(JAVA)', '이상진'],
+        ['C016', '감염병관리지원단(JAVA)', '이상진'],
+        ['C017', '병원간호사회', '이상진'],
+        ['C018', '제주진단시스템', '김희철'],
+        ['C019', '부산교육공무직채용시스템', '이상진'],
+        ['C020', '경제진흥원', '이상진'],
+        ['C021', '창고이음(2월 중 해지)', '구범석'],
+        ['C022', '캡스톤', '김주희'],
+        ['C023', 'BTIS', '윤종구'],
+        ['C024', '기장도시관리공단', '이상진'],
+        ['C025', '부산시예산편성', '김희철'],
+        ['C026', '한성대 기숙사', '한수현'],
+        ['C027', 'LH', '윤종구'],
+        ['C028', '창원시 정비사업', '김희철'],
+        ['C029', '경기도 정비사업', '김희철'],
+        ['C030', '메디투어 신규 2025', '윤원태'],
+        ['C031', '문화재단', '윤종구'],
+        ['C032', '한세대', '한수현'],
+        ['C033', '오캠핑', '윤원태'],
+        ['C034', '부산인사시스템', '이상진'],
+        ['C035', '금융박물관로드', '이상진'],
+        ['C036', '성인지 웹진', '이상진'],
+        ['C037', '대학생 골목상권 마케터즈 플랫폼', '이상진'],
+        ['C038', '부경대 구글앱스', '이상진'],
+        ['C039', '선도기업', '이상진'],
+        ['C040', '유니칸', '이상진'],
+        ['C041', '파맥스', '이상진'],
+        ['C042', '부경대 대표 및 CMS', '이상진'],
+        ['C043', '삼성 바이오로직스 파트너 포탈', '이상진'],
+        ['C044', '삼영E&C', '이상진'],
+        ['C045', '부경대 수과대 본원 + CMS 9개학과', '이상진'],
+        ['C046', '부산도시가스', '이상진'],
+        ['C047', '바다TV', '이상진'],
+        ['C048', '부산자원순환', '이상진'],
+        ['C049', '연세대 어도비', '이상진'],
+        ['C050', '부산대 부동산학과 원우앱', '한수현'],
+        ['C051', 'UST 기숙사', '이상진'],
+        ['C052', '서울시목적사업', '이상진'],
+        ['C053', '오리엔탈 검사개발', '이상진'],
+        ['C054', '부산시 공공보건의료지원단', '이상진'],
+        ['C055', '부산시교육청 법무행정', '이상진'],
+        ['C056', '서울의료원 2025', '한수현'],
+        ['C057', '울산 강사매칭', '구범석'],
+        ['C058', '남성초등학교', '이상진'],
+        ['C059', '디지털커머스(소담스퀘어)', '이상진'],
+        ['C060', '함바까보까(부산경제진흥원)', '이상진'],
+        ['C061', '경제진흥원 부산지식산업센터 nifc', '이상진'],
+      ];
+
+      db.transaction(() => {
+        for (const [code, name, empName] of clientData) {
+          const result = insClient.run(code, name);
+          insAssign.run(result.lastInsertRowid, empName);
+        }
+      })();
     }
   }
   return db;

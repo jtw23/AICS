@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import CategoryBadge from '../components/CategoryBadge';
 import DraftCard from '../components/DraftCard';
@@ -19,15 +19,27 @@ interface ProcessResult {
   similar: { content: string; score: number }[];
 }
 
+interface ClientOption {
+  id: number;
+  client_code: string;
+  name: string;
+}
+
 export default function InquiryPage() {
   const [content, setContent] = useState('');
   const [tone, setTone] = useState<ToneType>('공식');
+  const [clientId, setClientId] = useState<number | ''>('');
+  const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   const TONES: ToneType[] = ['공식', '친근', '간결'];
+
+  useEffect(() => {
+    api.get<{ items: ClientOption[] }>('/settings/clients').then((r) => setClients(r.data.items));
+  }, []);
 
   const handleProcess = async () => {
     if (!content.trim()) return;
@@ -37,10 +49,15 @@ export default function InquiryPage() {
     setSelectedVariant(null);
 
     try {
-      const res = await api.post<ProcessResult>('/inquiry/process', { content, tone });
+      const res = await api.post<ProcessResult>('/inquiry/process', {
+        content,
+        tone,
+        client_id: clientId || null,
+      });
       setResult(res.data);
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'AI 처리 중 오류가 발생했습니다.');
+    } catch (err) {
+      const e = err as { response?: { data?: { error?: string } } };
+      setError(e.response?.data?.error ?? 'AI 처리 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -53,8 +70,23 @@ export default function InquiryPage() {
         <p className="text-sm text-gray-500 mt-1">고객 문의를 붙여넣으면 AI가 자동 분류하고 답변 초안을 생성합니다.</p>
       </div>
 
-      {/* 입력 영역 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
+        {/* 고객사 선택 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">고객사</label>
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          >
+            <option value="">고객사 선택 (선택사항)</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>[{c.client_code}] {c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 답변 톤 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">답변 톤</label>
           <div className="flex gap-2">
@@ -74,6 +106,7 @@ export default function InquiryPage() {
           </div>
         </div>
 
+        {/* 문의 내용 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">고객 문의 내용</label>
           <textarea
@@ -105,10 +138,8 @@ export default function InquiryPage() {
         </button>
       </div>
 
-      {/* 결과 */}
       {result && (
         <div className="space-y-4">
-          {/* 분류 결과 */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">분류 결과</h3>
             <div className="flex flex-wrap items-center gap-3">
@@ -120,7 +151,6 @@ export default function InquiryPage() {
             </div>
           </div>
 
-          {/* 유사 문의 */}
           {result.similar.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-amber-800 mb-2">
@@ -139,7 +169,6 @@ export default function InquiryPage() {
             </div>
           )}
 
-          {/* 답변 초안 */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">답변 초안 3가지 ({tone} 톤)</h3>
             <div className="grid gap-3">

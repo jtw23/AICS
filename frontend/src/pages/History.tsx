@@ -13,7 +13,7 @@ interface InquiryRow {
   created_at: number;
 }
 
-const CATEGORIES = ['전체', '결제', '배송', '환불', '기술지원', '계정', '기타'];
+const CATEGORIES = ['전체', '계약', '견적', '개발', '유지보수', '장애', '기술지원', '기타'];
 
 export default function HistoryPage() {
   const navigate = useNavigate();

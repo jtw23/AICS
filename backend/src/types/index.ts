@@ -15,18 +15,34 @@ export interface JwtPayload {
 }
 
 export type InquiryCategory =
-  | '결제'
-  | '배송'
-  | '환불'
+  | '계약'
+  | '견적'
+  | '개발'
+  | '유지보수'
+  | '장애'
   | '기술지원'
-  | '계정'
   | '기타';
 
 export type ToneType = '공식' | '친근' | '간결';
 
+export interface Client {
+  id: number;
+  client_code: string;
+  name: string;
+  created_at: number;
+}
+
+export interface Employee {
+  id: number;
+  name: string;
+  department: '개발팀' | '기획팀' | '디자인팀';
+  created_at: number;
+}
+
 export interface Inquiry {
   id: number;
   user_id: number;
+  client_id: number | null;
   content_masked: string;
   category: InquiryCategory;
   category_confidence: number;
