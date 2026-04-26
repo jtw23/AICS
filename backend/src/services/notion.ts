@@ -16,6 +16,7 @@ export interface NotionTaskParams {
   clientName?: string | null;
   dueDate?: string | null;       // ISO date: '2026-04-20'
   notionUserId?: string | null;  // Notion user UUID
+  department?: string | null;    // 다음 부서
 }
 
 // 카테고리 → 우선순위
@@ -85,7 +86,7 @@ function divider() {
 export async function createNotionTask(params: NotionTaskParams): Promise<void> {
   const {
     inquiryId, category, summary, contentMasked, confidence, drafts,
-    databaseId, clientName, dueDate, notionUserId,
+    databaseId, clientName, dueDate, notionUserId, department,
   } = params;
 
   const title = `[${category}] #${inquiryId} - ${summary.slice(0, 80)}`;
@@ -112,6 +113,11 @@ export async function createNotionTask(params: NotionTaskParams): Promise<void> 
   // 담당자: Notion user UUID가 있을 때만 포함
   if (notionUserId) {
     properties['담당자'] = { people: [{ object: 'user', id: notionUserId }] };
+  }
+
+  // 다음 부서: 값이 있을 때만 포함
+  if (department) {
+    properties['다음 부서'] = { select: { name: department } };
   }
 
   const children = [

@@ -21,15 +21,16 @@ router.get('/assignees', (req: AuthRequest, res: Response) => {
 
 router.put('/assignees/:category', requireRole('admin'), (req: AuthRequest, res: Response) => {
   const { category } = req.params;
-  const { user_id, notion_database_id, notion_user_id } = req.body as {
+  const { user_id, notion_database_id, notion_user_id, department } = req.body as {
     user_id?: number | null;
     notion_database_id?: string | null;
     notion_user_id?: string | null;
+    department?: string | null;
   };
   const db = getDb();
   db.prepare(
-    'UPDATE assignees SET user_id = ?, notion_database_id = ?, notion_user_id = ? WHERE category = ?'
-  ).run(user_id ?? null, notion_database_id ?? null, notion_user_id ?? null, category);
+    'UPDATE assignees SET user_id = ?, notion_database_id = ?, notion_user_id = ?, department = ? WHERE category = ?'
+  ).run(user_id ?? null, notion_database_id ?? null, notion_user_id ?? null, department ?? null, category);
   res.json({ ok: true });
 });
 

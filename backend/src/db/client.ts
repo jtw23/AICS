@@ -18,6 +18,7 @@ export function getDb(): Database.Database {
     try { db.exec('ALTER TABLE assignees ADD COLUMN notion_database_id TEXT'); } catch (_) {}
     try { db.exec('ALTER TABLE assignees DROP COLUMN discord_webhook'); } catch (_) {}
     try { db.exec('ALTER TABLE assignees ADD COLUMN notion_user_id TEXT'); } catch (_) {}
+    try { db.exec('ALTER TABLE assignees ADD COLUMN department TEXT'); } catch (_) {}
 
     // inquiries에 client_id 추가
     try { db.exec('ALTER TABLE inquiries ADD COLUMN client_id INTEGER REFERENCES clients(id)'); } catch (_) {}

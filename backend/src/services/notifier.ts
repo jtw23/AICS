@@ -39,6 +39,7 @@ export async function notifyAssignees(
       user_id: number | null;
       notion_database_id: string | null;
       notion_user_id: string | null;
+      department: string | null;
     } | undefined;
 
   if (!assignee) return;
@@ -87,6 +88,7 @@ export async function notifyAssignees(
         clientName: inquiry?.client_name ?? null,
         dueDate: null,
         notionUserId: assignee.notion_user_id ?? null,
+        department: assignee.department ?? null,
       });
     } catch (err) {
       console.error('[Notion 연동 오류]', err);
