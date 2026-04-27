@@ -1,88 +1,98 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { clearAuth, getUser } from '../lib/auth';
 import { useNotifications } from '../hooks/useNotifications';
-import NotificationPanel from './NotificationPanel';
-import { useState } from 'react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const user = getUser();
-  const { unreadCount, notifications, markRead, markAllRead } = useNotifications();
-  const [showNotif, setShowNotif] = useState(false);
+  useNotifications(); // SSE 연결 유지
 
-  const handleLogout = () => {
-    clearAuth();
-    navigate('/login');
-  };
+  const handleLogout = () => { clearAuth(); navigate('/login'); };
 
-  const navItem = (to: string, label: string) => (
-    <Link
-      to={to}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-        location.pathname === to
-          ? 'bg-indigo-600 text-white'
-          : 'text-gray-600 hover:bg-gray-100'
-      }`}
-    >
-      {label}
-    </Link>
-  );
+  const isActive = (to: string) =>
+    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+
+  const navItems = [
+    { to: '/',         icon: 'input',    label: '문의 처리' },
+    { to: '/history',  icon: 'history',  label: '히스토리' },
+    ...(user?.role === 'admin' ? [{ to: '/settings', icon: 'settings', label: '설정' }] : []),
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <span className="font-bold text-indigo-600 text-lg">AICS</span>
-            <nav className="flex gap-1">
-              {navItem('/', '문의 처리')}
-              {navItem('/history', '히스토리')}
-              {user?.role === 'admin' && navItem('/settings', '설정')}
-            </nav>
+    <div className="h-screen flex overflow-hidden">
+      {/* ── 사이드바 ── */}
+      <nav className="dark-scroll w-64 h-full flex flex-col flex-shrink-0 bg-slate-900 border-r border-slate-800 z-50">
+        {/* 로고 */}
+        <div className="flex items-center gap-3" style={{ paddingTop: '1rem', paddingBottom: '1rem', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}>
+          <div className="w-11 h-11 rounded-lg bg-primary-container flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined ms-fill text-white" style={{ fontSize: 24 }}>business</span>
           </div>
+          <div className="min-w-0">
+            <p className="text-white font-black text-xl leading-none tracking-tight">AICS</p>
+            <p className="text-slate-400 text-xs mt-1.5 truncate">Enterprise Support</p>
+          </div>
+        </div>
 
+        {/* 메뉴 */}
+        <ul className="flex-1 overflow-y-auto" style={{ paddingTop: '1.5rem', paddingLeft: '0.75rem', paddingRight: '0.75rem', display: 'flex', flexDirection: 'column' }}>
+          {navItems.map(({ to, icon, label }) => {
+            const active = isActive(to);
+            return (
+              <li key={to}>
+                <Link
+                  to={to}
+                  className={`flex items-center gap-3 rounded-md text-base font-medium transition-colors duration-150 ${
+                    active
+                      ? 'bg-slate-800 text-white'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                  }`}
+                  style={{ paddingTop: '1rem', paddingBottom: '1rem', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}
+                >
+                  <span className={`material-symbols-outlined ${active ? 'text-indigo-400' : ''}`} style={{ fontSize: 22 }}>{icon}</span>
+                  {label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* 하단 사용자 */}
+        <div className="border-t border-slate-800" style={{ paddingTop: '1rem', paddingBottom: '1rem', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}>
           <div className="flex items-center gap-3">
-            {/* 알림 버튼 */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotif(!showNotif)}
-                className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotif && (
-                <NotificationPanel
-                  notifications={notifications}
-                  onMarkRead={markRead}
-                  onMarkAllRead={markAllRead}
-                  onClose={() => setShowNotif(false)}
-                />
-              )}
+            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-white text-base font-bold flex-shrink-0">
+              {user?.name?.[0] ?? '?'}
             </div>
-
-            <span className="text-sm text-gray-500">{user?.name}</span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1 rounded border border-gray-200 hover:border-gray-400 transition-colors"
-            >
-              로그아웃
+            <div className="flex-1 min-w-0">
+              <p className="text-slate-200 text-base font-semibold truncate">{user?.name}</p>
+              <p className="text-slate-500 text-sm truncate mt-0.5">{user?.role === 'admin' ? '관리자' : '에이전트'}</p>
+            </div>
+            <button onClick={handleLogout} className="text-slate-500 hover:text-slate-200 transition-colors flex-shrink-0" title="로그아웃">
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>logout</span>
             </button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
-        {children}
-      </main>
+      {/* ── 우측 전체 ── */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        {/* Top App Bar */}
+        <header className="sticky top-0 z-40 h-20 flex items-center bg-white border-b border-slate-200 flex-shrink-0" style={{ paddingLeft: '2.5rem', paddingRight: '2rem' }}>
+          <div className="hidden md:flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg w-80" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
+            <span className="material-symbols-outlined text-on-surface-variant flex-shrink-0" style={{ fontSize: 18 }}>search</span>
+            <input
+              className="flex-1 border-none bg-transparent text-sm focus:ring-0 outline-none placeholder:text-on-surface-variant text-on-surface"
+              placeholder="검색..."
+              type="text"
+            />
+          </div>
+        </header>
+
+        {/* Main Canvas */}
+        <main className="flex-1 overflow-y-auto bg-background">
+          <div className="w-full" style={{ paddingLeft: '2.5rem', paddingRight: '1.5rem', paddingTop: '1.5rem', paddingBottom: '2rem' }}>{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

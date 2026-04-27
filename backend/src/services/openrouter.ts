@@ -10,7 +10,7 @@ export interface OpenRouterResponse {
 }
 
 const FREE_MODELS = [
-  'google/gemini-2.0-flash-exp:free',
+  'google/gemini-2.5-flash:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'deepseek/deepseek-chat-v3-0324:free',
   'mistralai/mistral-7b-instruct:free',
@@ -50,7 +50,7 @@ export async function chatCompletion(
         }),
       });
 
-      if (res.status === 429 || res.status === 503 || res.status === 502) {
+      if (res.status === 429 || res.status === 503 || res.status === 502 || res.status === 404) {
         console.warn(`[OpenRouter] ${model} 제한/오류 (${res.status}), 다음 모델로 전환`);
         await sleep(DELAY_MS);
         continue;

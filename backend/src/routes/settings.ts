@@ -5,32 +5,22 @@ import { getDb } from '../db/client';
 const router = Router();
 router.use(authenticate);
 
-// ── 카테고리 담당자 ──────────────────────────────────────────────────────────
+// ── Notion 공통 설정 ──────────────────────────────────────────────────────────
 
-router.get('/assignees', (req: AuthRequest, res: Response) => {
+router.get('/notion', requireRole('admin'), (req: AuthRequest, res: Response) => {
   const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT a.*, u.name as user_name, u.email as user_email
-       FROM assignees a
-       LEFT JOIN users u ON u.id = a.user_id`
-    )
-    .all();
-  res.json({ items: rows });
+  const row = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get('notion_database_id') as { value: string } | undefined;
+  res.json({ notion_database_id: row?.value ?? '' });
 });
 
-router.put('/assignees/:category', requireRole('admin'), (req: AuthRequest, res: Response) => {
-  const { category } = req.params;
-  const { user_id, notion_database_id, notion_user_id, department } = req.body as {
-    user_id?: number | null;
-    notion_database_id?: string | null;
-    notion_user_id?: string | null;
-    department?: string | null;
-  };
+router.put('/notion', requireRole('admin'), (req: AuthRequest, res: Response) => {
+  const { notion_database_id } = req.body as { notion_database_id: string };
   const db = getDb();
   db.prepare(
-    'UPDATE assignees SET user_id = ?, notion_database_id = ?, notion_user_id = ?, department = ? WHERE category = ?'
-  ).run(user_id ?? null, notion_database_id ?? null, notion_user_id ?? null, department ?? null, category);
+    'INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)'
+  ).run('notion_database_id', notion_database_id?.trim() ?? '');
   res.json({ ok: true });
 });
 

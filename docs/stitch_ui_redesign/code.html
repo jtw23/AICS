@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Inquiry Processing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed": "#131b2e",
+                        "outline": "#777587",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "surface-tint": "#4d44e3",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "secondary-fixed": "#dae2fd",
+                        "background": "#f7f9fb",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#dae2fd",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-low": "#f2f4f6",
+                        "secondary": "#565e74",
+                        "surface-container": "#eceef0",
+                        "on-background": "#191c1e",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary": "#3130c0",
+                        "surface": "#f7f9fb",
+                        "primary": "#3525cd",
+                        "surface-bright": "#f7f9fb",
+                        "tertiary-fixed": "#e1e0ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#e2dfff",
+                        "outline-variant": "#c7c4d8",
+                        "on-tertiary-fixed": "#07006c",
+                        "on-surface": "#191c1e",
+                        "surface-dim": "#d8dadc",
+                        "tertiary-container": "#4b4dd8",
+                        "on-tertiary-container": "#d9d8ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#dad7ff",
+                        "on-primary-fixed": "#0f0069",
+                        "primary-container": "#4f46e5",
+                        "inverse-surface": "#2d3133",
+                        "on-secondary-container": "#5c647a",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-surface-variant": "#464555",
+                        "inverse-primary": "#c3c0ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "4px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xs": "8px",
+                        "sidebar_width": "260px",
+                        "max_content_width": "1440px"
+                    },
+                    fontFamily: {
+                        "h1": ["Inter"],
+                        "caption": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "h3": ["Inter"],
+                        "h2": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "h1": ["30px", { lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "caption": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }],
+                        "h3": ["20px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "h2": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "label-md": ["14px", { lineHeight: "20px", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[260px] border-r border-slate-800 bg-slate-900 shadow-none z-50">
+<div class="flex flex-col h-full py-6">
+<!-- Header -->
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">business</span>
+</div>
+<div>
+<div class="text-xl font-black text-white tracking-tight">AICS</div>
+<div class="text-slate-400 text-xs">Enterprise Support</div>
+</div>
+</div>
+<!-- Tabs -->
+<ul class="flex-1 space-y-2">
+<li>
+<a class="flex items-center gap-3 bg-indigo-600/10 text-white border-l-4 border-indigo-500 px-4 py-3 font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined">input</span>
+                        Inquiry Processing
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-400 hover:text-slate-100 px-4 py-3 hover:bg-slate-800/50 transition-colors duration-200 font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined">history</span>
+                        History
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-400 hover:text-slate-100 px-4 py-3 hover:bg-slate-800/50 transition-colors duration-200 font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-[260px] min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 w-full border-b bg-white/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm border-slate-200 dark:border-slate-800 h-16 px-8 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<!-- Empty left for search or future use based on "search_bar: on_left" instruction -->
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-surface-container-lowest outline-none w-64 transition-all" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all Focus: ring-2 ring-indigo-500 ring-offset-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all Focus: ring-2 ring-indigo-500 ring-offset-2">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all Focus: ring-2 ring-indigo-500 ring-offset-2">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 p-xl max-w-max_content_width mx-auto w-full">
+<!-- Header Section -->
+<div class="mb-lg">
+<h1 class="font-h1 text-h1 text-on-surface mb-2">Inquiry Processing</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Paste customer inquiries and AI will automatically classify and generate draft responses.</p>
+</div>
+<!-- Bento Grid Layout for Main Content -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Left Column: Form Controls (1/3 width on large screens) -->
+<div class="lg:col-span-4 space-y-lg">
+<!-- Customer Selection Card -->
+<div class="bg-surface-container-lowest rounded-xl p-lg shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)]">
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="customer-select">Select Customer</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-lowest border border-outline-variant text-on-surface rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-md text-body-md" id="customer-select">
+<option disabled="" selected="" value="">Choose a customer...</option>
+<option value="1">Acme Corp</option>
+<option value="2">Global Tech</option>
+<option value="3">Stark Industries</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Tone Selection Card -->
+<div class="bg-surface-container-lowest rounded-xl p-lg shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)]">
+<label class="block font-label-md text-label-md text-on-surface mb-sm">Response Tone</label>
+<div class="grid grid-cols-3 gap-sm">
+<!-- Formal Option -->
+<label class="cursor-pointer relative">
+<input checked="" class="peer sr-only" name="tone" type="radio" value="formal"/>
+<div class="flex flex-col items-center justify-center p-sm border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed">
+<span class="material-symbols-outlined mb-1">work</span>
+<span class="font-label-sm text-label-sm">Formal</span>
+</div>
+</label>
+<!-- Friendly Option -->
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="tone" type="radio" value="friendly"/>
+<div class="flex flex-col items-center justify-center p-sm border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed">
+<span class="material-symbols-outlined mb-1">mood</span>
+<span class="font-label-sm text-label-sm">Friendly</span>
+</div>
+</label>
+<!-- Concise Option -->
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="tone" type="radio" value="concise"/>
+<div class="flex flex-col items-center justify-center p-sm border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed">
+<span class="material-symbols-outlined mb-1">short_text</span>
+<span class="font-label-sm text-label-sm">Concise</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Informational Snippet / Graphic Placeholder -->
+<div class="hidden lg:block bg-surface-container rounded-xl p-lg relative overflow-hidden h-48 group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-container to-tertiary-container opacity-10 group-hover:opacity-20 transition-opacity"></div>
+<div class="relative z-10">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed mb-sm">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<h3 class="font-h3 text-h3 text-on-surface mb-1">AI Powered</h3>
+<p class="font-body-sm text-caption text-on-surface-variant">Our AI analyzes sentiment and context to draft the perfect response.</p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-6 -right-6 text-9xl text-primary opacity-5">smart_toy</span>
+</div>
+</div>
+<!-- Right Column: Main Text Area (2/3 width on large screens) -->
+<div class="lg:col-span-8 flex flex-col">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)] flex flex-col h-full border border-surface-variant">
+<!-- Textarea Header -->
+<div class="px-lg py-sm border-b border-surface-variant flex justify-between items-center bg-surface-container-lowest rounded-t-xl">
+<label class="font-label-md text-label-md text-on-surface" for="inquiry-content">Inquiry Content</label>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Clear">
+<span class="material-symbols-outlined text-sm">clear_all</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Paste from Clipboard">
+<span class="material-symbols-outlined text-sm">content_paste</span>
+</button>
+</div>
+</div>
+<!-- Textarea -->
+<div class="flex-1 p-lg relative">
+<textarea class="w-full h-full min-h-[300px] resize-none border-none bg-transparent text-on-surface font-body-md text-body-md focus:ring-0 placeholder:text-outline p-0" id="inquiry-content" placeholder="Paste customer inquiry here..."></textarea>
+</div>
+<!-- Textarea Footer -->
+<div class="px-lg py-sm border-t border-surface-variant bg-surface-container-lowest rounded-b-xl flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm">security</span>
+<span class="font-caption text-caption text-outline">Personal information (phone number, email, etc.) is automatically masked.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="mt-xl flex justify-end lg:justify-center">
+<button class="w-full lg:w-auto bg-primary text-on-primary font-label-md text-label-md py-4 px-8 rounded-full shadow-md hover:bg-primary-container transition-colors duration-200 flex items-center justify-center gap-2 group">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform duration-300">auto_awesome</span>
+                    Generate AI Classification + Draft Answer
+                </button>
+</div>
+</main>
+</div>
+</body></html>

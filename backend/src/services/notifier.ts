@@ -33,65 +33,46 @@ export async function notifyAssignees(
 ) {
   const db = getDb();
 
-  const assignee = db
-    .prepare('SELECT * FROM assignees WHERE category = ?')
-    .get(category) as {
-      user_id: number | null;
-      notion_database_id: string | null;
-      notion_user_id: string | null;
-      department: string | null;
-    } | undefined;
+  // 공통 Notion DB ID 조회
+  const setting = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get('notion_database_id') as { value: string } | undefined;
 
-  if (!assignee) return;
+  if (!setting?.value) return;
 
-  const message = `[${category}] 새 문의 접수 (#${inquiryId}): ${summary}`;
+  try {
+    const inquiry = db
+      .prepare(
+        `SELECT i.content_masked, i.category_confidence, i.client_id,
+                c.name as client_name
+         FROM inquiries i
+         LEFT JOIN clients c ON c.id = i.client_id
+         WHERE i.id = ?`
+      )
+      .get(inquiryId) as
+      | (Pick<Inquiry, 'content_masked' | 'category_confidence' | 'client_id'> & {
+          client_name: string | null;
+        })
+      | undefined;
 
-  // 인앱 알림 + SSE
-  if (assignee.user_id) {
-    db.prepare(
-      `INSERT INTO notifications (inquiry_id, user_id, channel, message)
-       VALUES (?, ?, 'in-app', ?)`
-    ).run(inquiryId, assignee.user_id, message);
+    const drafts = db
+      .prepare('SELECT variant, content FROM drafts WHERE inquiry_id = ? ORDER BY variant')
+      .all(inquiryId) as Pick<Draft, 'variant' | 'content'>[];
 
-    pushSseEvent(assignee.user_id, { type: 'new_inquiry', inquiryId, category, summary, message });
-  }
-
-  // Notion 작업 생성
-  if (assignee.notion_database_id) {
-    try {
-      const inquiry = db
-        .prepare(
-          `SELECT i.content_masked, i.category_confidence, i.client_id,
-                  c.name as client_name
-           FROM inquiries i
-           LEFT JOIN clients c ON c.id = i.client_id
-           WHERE i.id = ?`
-        )
-        .get(inquiryId) as
-        | (Pick<Inquiry, 'content_masked' | 'category_confidence' | 'client_id'> & {
-            client_name: string | null;
-          })
-        | undefined;
-
-      const drafts = db
-        .prepare('SELECT variant, content FROM drafts WHERE inquiry_id = ? ORDER BY variant')
-        .all(inquiryId) as Pick<Draft, 'variant' | 'content'>[];
-
-      await createNotionTask({
-        inquiryId,
-        category,
-        summary,
-        contentMasked: inquiry?.content_masked ?? '',
-        confidence: inquiry?.category_confidence ?? 0,
-        drafts,
-        databaseId: assignee.notion_database_id,
-        clientName: inquiry?.client_name ?? null,
-        dueDate: null,
-        notionUserId: assignee.notion_user_id ?? null,
-        department: assignee.department ?? null,
-      });
-    } catch (err) {
-      console.error('[Notion 연동 오류]', err);
-    }
+    await createNotionTask({
+      inquiryId,
+      category,
+      summary,
+      contentMasked: inquiry?.content_masked ?? '',
+      confidence: inquiry?.category_confidence ?? 0,
+      drafts,
+      databaseId: setting.value,
+      clientName: inquiry?.client_name ?? null,
+      dueDate: null,
+      notionUserId: null,
+      department: null,
+    });
+  } catch (err) {
+    console.error('[Notion 연동 오류]', err);
   }
 }

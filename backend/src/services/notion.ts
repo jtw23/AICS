@@ -98,6 +98,7 @@ export async function createNotionTask(params: NotionTaskParams): Promise<void> 
   const properties: Record<string, unknown> = {
     '작업 이름': { title: richText(title) },
     '업체명':   { rich_text: richText(clientName ?? '') },
+    '분류':     { select: { name: category } },
     '상태':     { status: { name: '시작 전' } },
     '우선순위': { select: { name: priority } },
     '작업 유형': { multi_select: [{ name: category }] },
