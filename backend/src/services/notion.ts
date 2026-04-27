@@ -159,12 +159,13 @@ export async function createNotionTask(params: NotionTaskParams): Promise<void> 
 
   setProp(properties, propTypes, '업체명',    clientName);
   setProp(properties, propTypes, '분류',      category);
+  setProp(properties, propTypes, '우선순위',  priority);
   setProp(properties, propTypes, '부서',      department);
   setProp(properties, propTypes, '업무담당자', employeeName);
 
   // 설명: 분류·신뢰도 + 고객 문의 원문 — 작업 이름(AI 요약)과 구분
   const descriptionText = [
-    `[${category}] 신뢰도 ${confidencePct}`,
+    `[${category}]`,
     clientName ? `업체: ${clientName}` : '',
     '',
     contentMasked,
@@ -193,7 +194,7 @@ export async function createNotionTask(params: NotionTaskParams): Promise<void> 
     paragraph(summary),
     divider(),
     heading2('AI 초안 답변'),
-    ...drafts.flatMap((d) => [heading3(`초안 ${d.variant}`), paragraph(d.content)]),
+    ...drafts.flatMap((d) => [heading3('초안'), paragraph(d.content)]),
   ];
 
   const body = {
