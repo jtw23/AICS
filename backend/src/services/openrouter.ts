@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { getDb } from '../db/client';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -9,12 +10,25 @@ export interface OpenRouterResponse {
   choices: { message: { content: string } }[];
 }
 
-const FREE_MODELS = [
-  'google/gemini-2.5-flash:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'deepseek/deepseek-chat-v3-0324:free',
-  'mistralai/mistral-7b-instruct:free',
+export const DEFAULT_MODELS = [
+  'openai/gpt-oss-120b:free',
+  'z-ai/glm-4.5-air:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'google/gemma-4-31b-it:free',
+  'deepseek/deepseek-v4-flash',
 ];
+
+function getModels(): string[] {
+  try {
+    const row = getDb()
+      .prepare('SELECT value FROM app_settings WHERE key = ?')
+      .get('openrouter_models') as { value: string } | undefined;
+    const parsed: unknown = row?.value ? JSON.parse(row.value) : null;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_MODELS;
+  } catch {
+    return DEFAULT_MODELS;
+  }
+}
 
 const DELAY_MS = 1000;
 
@@ -32,7 +46,7 @@ export async function chatCompletion(
 
   let lastError: Error | null = null;
 
-  for (const model of FREE_MODELS) {
+  for (const model of getModels()) {
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',

@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { getDb } from '../db/client';
+import { DEFAULT_MODELS } from '../services/openrouter';
 
 const router = Router();
 router.use(authenticate);
@@ -24,6 +25,30 @@ router.put('/notion', requireRole('admin'), (req: AuthRequest, res: Response) =>
   res.json({ ok: true });
 });
 
+// ── OpenRouter 모델 설정 ──────────────────────────────────────────────────────
+
+router.get('/openrouter', (req: AuthRequest, res: Response) => {
+  const db = getDb();
+  const row = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get('openrouter_models') as { value: string } | undefined;
+  const models: unknown = row?.value ? JSON.parse(row.value) : null;
+  res.json({ models: Array.isArray(models) && models.length > 0 ? models : DEFAULT_MODELS });
+});
+
+router.put('/openrouter', requireRole('admin'), (req: AuthRequest, res: Response) => {
+  const { models } = req.body as { models: string[] };
+  if (!Array.isArray(models) || models.length === 0) {
+    res.status(400).json({ error: '모델 목록이 비어있습니다.' });
+    return;
+  }
+  const db = getDb();
+  db.prepare(
+    'INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)'
+  ).run('openrouter_models', JSON.stringify(models));
+  res.json({ ok: true });
+});
+
 // ── 사용자(로그인 계정) ───────────────────────────────────────────────────────
 
 router.get('/users', requireRole('admin'), (req: AuthRequest, res: Response) => {
@@ -38,17 +63,24 @@ router.get('/users', requireRole('admin'), (req: AuthRequest, res: Response) => 
 
 router.get('/clients', (req: AuthRequest, res: Response) => {
   const db = getDb();
-  const rows = db
+
+  const clients = db
+    .prepare('SELECT id, client_code, name, created_at FROM clients ORDER BY client_code')
+    .all() as { id: number; client_code: string; name: string; created_at: number }[];
+
+  const assignments = db
     .prepare(
-      `SELECT c.id, c.client_code, c.name, c.created_at,
-              e.id as employee_id, e.name as employee_name, e.department
-       FROM clients c
-       LEFT JOIN client_assignments ca ON ca.client_id = c.id
-       LEFT JOIN employees e ON e.id = ca.employee_id
-       ORDER BY c.client_code`
+      `SELECT ca.client_id, ca.department, ca.employee_id, e.name as employee_name
+       FROM client_assignments ca JOIN employees e ON e.id = ca.employee_id`
     )
-    .all();
-  res.json({ items: rows });
+    .all() as { client_id: number; department: string; employee_id: number; employee_name: string }[];
+
+  const items = clients.map((c) => ({
+    ...c,
+    assignments: assignments.filter((a) => a.client_id === c.id),
+  }));
+
+  res.json({ items });
 });
 
 router.post('/clients', requireRole('admin'), (req: AuthRequest, res: Response) => {
@@ -74,18 +106,25 @@ router.delete('/clients/:id', requireRole('admin'), (req: AuthRequest, res: Resp
   res.json({ ok: true });
 });
 
-// ── 담당 배정 (고객사 ↔ 개발팀 직원) ────────────────────────────────────────
+// ── 담당 배정 (고객사 ↔ 팀별 직원) ──────────────────────────────────────────
 
 router.put('/clients/:id/assignment', requireRole('admin'), (req: AuthRequest, res: Response) => {
-  const { employee_id } = req.body as { employee_id: number | null };
+  const { employee_id, department } = req.body as { employee_id: number | null; department: string };
+
+  const validDepts = ['개발팀', '기획팀', '디자인팀'];
+  if (!validDepts.includes(department)) {
+    res.status(400).json({ error: '유효하지 않은 부서입니다.' });
+    return;
+  }
+
   const db = getDb();
-  if (employee_id === null || employee_id === undefined) {
-    db.prepare('DELETE FROM client_assignments WHERE client_id = ?').run(req.params.id);
+  if (!employee_id) {
+    db.prepare('DELETE FROM client_assignments WHERE client_id = ? AND department = ?').run(req.params.id, department);
   } else {
     db.prepare(
-      `INSERT INTO client_assignments (client_id, employee_id) VALUES (?, ?)
-       ON CONFLICT(client_id) DO UPDATE SET employee_id = excluded.employee_id`
-    ).run(req.params.id, employee_id);
+      `INSERT INTO client_assignments (client_id, employee_id, department) VALUES (?, ?, ?)
+       ON CONFLICT(client_id, department) DO UPDATE SET employee_id = excluded.employee_id`
+    ).run(req.params.id, employee_id, department);
   }
   res.json({ ok: true });
 });

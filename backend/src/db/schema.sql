@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS client_assignments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   client_id INTEGER NOT NULL,
   employee_id INTEGER NOT NULL,
-  UNIQUE(client_id),
+  department TEXT NOT NULL CHECK(department IN ('개발팀','기획팀','디자인팀')),
+  UNIQUE(client_id, department),
   FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
   FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );

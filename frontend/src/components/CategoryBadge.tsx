@@ -1,17 +1,19 @@
-const CATEGORY_COLORS: Record<string, string> = {
-  계약:   'bg-blue-50 text-blue-700 border-blue-200',
-  견적:   'bg-cyan-50 text-cyan-700 border-cyan-200',
-  개발:   'bg-violet-50 text-violet-700 border-violet-200',
-  유지보수:'bg-emerald-50 text-emerald-700 border-emerald-200',
-  장애:   'bg-red-50 text-red-700 border-red-200',
-  기술지원:'bg-purple-50 text-purple-700 border-purple-200',
-  기타:   'bg-slate-50 text-slate-600 border-slate-200',
+const CATEGORY_COLORS: Record<string, { badge: string; dot: string }> = {
+  계약:    { badge: 'bg-blue-100 text-blue-800',     dot: 'bg-blue-500' },
+  견적:    { badge: 'bg-cyan-100 text-cyan-800',     dot: 'bg-cyan-500' },
+  개발:    { badge: 'bg-violet-100 text-violet-800', dot: 'bg-violet-500' },
+  유지보수: { badge: 'bg-emerald-100 text-emerald-800', dot: 'bg-emerald-500' },
+  장애:    { badge: 'bg-red-100 text-red-800',       dot: 'bg-red-500' },
+  기술지원: { badge: 'bg-purple-100 text-purple-800', dot: 'bg-purple-500' },
+  기타:    { badge: 'bg-slate-100 text-slate-600',   dot: 'bg-slate-400' },
 };
 
 export default function CategoryBadge({ category }: { category: string }) {
-  const color = CATEGORY_COLORS[category] ?? 'bg-slate-50 text-slate-600 border-slate-200';
+  const color = CATEGORY_COLORS[category] ?? { badge: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' };
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${color}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-md font-semibold ${color.badge}`}
+      style={{ fontSize: '0.75rem', padding: '0.25rem 0.625rem' }}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${color.dot}`} />
       {category}
     </span>
   );

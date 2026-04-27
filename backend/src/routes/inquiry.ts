@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { maskPii } from '../services/pii';
 import { classifyInquiry } from '../services/classifier';
-import { generateDrafts } from '../services/drafter';
+import { generateDraft } from '../services/drafter';
 import { embed, cosineSimilarity, float32ToBuffer, bufferToFloat32 } from '../services/embedder';
 import { notifyAssignees } from '../services/notifier';
 import { getDb } from '../db/client';
@@ -52,8 +52,8 @@ router.post('/process', async (req: AuthRequest, res: Response) => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 2);
 
-    // 초안 생성
-    const [d1, d2, d3] = await generateDrafts(masked, category, tone, similar);
+    // 초안 생성 (1개)
+    const draft = await generateDraft(masked, category, tone, similar);
 
     // DB 저장
     const insertResult = db
@@ -65,12 +65,7 @@ router.post('/process', async (req: AuthRequest, res: Response) => {
 
     const inquiryId = insertResult.lastInsertRowid as number;
 
-    const insertDraft = db.prepare(
-      'INSERT INTO drafts (inquiry_id, variant, content) VALUES (?, ?, ?)'
-    );
-    insertDraft.run(inquiryId, 1, d1);
-    insertDraft.run(inquiryId, 2, d2);
-    insertDraft.run(inquiryId, 3, d3);
+    db.prepare('INSERT INTO drafts (inquiry_id, variant, content) VALUES (?, ?, ?)').run(inquiryId, 1, draft);
 
     // 알림
     await notifyAssignees(inquiryId, category, summary);
@@ -80,11 +75,7 @@ router.post('/process', async (req: AuthRequest, res: Response) => {
       category,
       confidence,
       summary,
-      drafts: [
-        { variant: 1, content: d1 },
-        { variant: 2, content: d2 },
-        { variant: 3, content: d3 },
-      ],
+      drafts: [{ variant: 1, content: draft }],
       similar: similar.map((s) => ({ content: s.content, score: s.score })),
     });
   } catch (err) {
@@ -102,6 +93,22 @@ router.patch('/:id/select-draft', async (req: AuthRequest, res: Response) => {
   db.prepare('UPDATE drafts SET selected = 0 WHERE inquiry_id = ?').run(id);
   db.prepare('UPDATE drafts SET selected = 1 WHERE inquiry_id = ? AND variant = ?').run(id, variant);
 
+  res.json({ ok: true });
+});
+
+// DELETE /api/inquiry/:id
+router.delete('/:id', (req: AuthRequest, res: Response) => {
+  const db = getDb();
+  const inquiry = db
+    .prepare('SELECT id FROM inquiries WHERE id = ?')
+    .get(req.params.id) as { id: number } | undefined;
+
+  if (!inquiry) {
+    res.status(404).json({ error: '문의를 찾을 수 없습니다.' });
+    return;
+  }
+
+  db.prepare('DELETE FROM inquiries WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 

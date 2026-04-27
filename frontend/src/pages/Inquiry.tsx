@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
 import CategoryBadge from '../components/CategoryBadge';
 import DraftCard from '../components/DraftCard';
@@ -26,18 +26,35 @@ export default function InquiryPage() {
   const [tone, setTone] = useState<ToneType>('공식');
   const [clientId, setClientId] = useState<number | ''>('');
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientOpen, setClientOpen] = useState(false);
+  const clientRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.get<{ items: ClientOption[] }>('/settings/clients').then((r) => setClients(r.data.items));
   }, []);
 
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (clientRef.current && !clientRef.current.contains(e.target as Node)) {
+        setClientOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const selectedClient = clients.find((c) => c.id === clientId) ?? null;
+  const filteredClients = clients.filter((c) =>
+    `${c.client_code} ${c.name}`.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
   const handleProcess = async () => {
     if (!content.trim()) return;
-    setLoading(true); setError(''); setResult(null); setSelectedVariant(null);
+    setLoading(true); setError(''); setResult(null);
     try {
       const res = await api.post<ProcessResult>('/inquiry/process', { content, tone, client_id: clientId || null });
       setResult(res.data);
@@ -62,21 +79,78 @@ export default function InquiryPage() {
         <div className="lg:col-span-4" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* 고객사 선택 */}
           <div className={card} style={{ padding: '1.5rem' }}>
-            <label className="block font-label-md text-label-md text-on-surface" htmlFor="client-select" style={{ marginBottom: '0.75rem', display: 'block' }}>고객사 선택</label>
-            <div className="relative">
-              <select
-                id="client-select"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full appearance-none bg-surface-container-lowest border border-outline-variant text-on-surface rounded-lg pr-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-md text-body-md"
-                style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', paddingLeft: '1rem' }}
+            <label className="block font-label-md text-label-md text-on-surface" style={{ marginBottom: '0.75rem', display: 'block' }}>고객사 선택</label>
+            <div ref={clientRef} style={{ position: 'relative' }}>
+              {/* 트리거 */}
+              <button
+                type="button"
+                onClick={() => { setClientOpen((o) => !o); setClientSearch(''); }}
+                className="w-full flex items-center justify-between border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                style={{ padding: '0.625rem 0.875rem', fontSize: '0.875rem', textAlign: 'left' }}
               >
-                <option value="">고객사를 선택하세요...</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>[{c.client_code}] {c.name}</option>)}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
-                <span className="material-symbols-outlined">expand_more</span>
-              </div>
+                <span className={selectedClient ? 'text-on-surface' : 'text-outline'}>
+                  {selectedClient ? `[${selectedClient.client_code}] ${selectedClient.name}` : '고객사를 선택하세요...'}
+                </span>
+                <div className="flex items-center" style={{ gap: '0.25rem', flexShrink: 0 }}>
+                  {selectedClient && (
+                    <span
+                      className="material-symbols-outlined text-outline hover:text-error transition-colors"
+                      style={{ fontSize: 16 }}
+                      onClick={(e) => { e.stopPropagation(); setClientId(''); setClientOpen(false); }}
+                    >close</span>
+                  )}
+                  <span className="material-symbols-outlined text-outline-variant" style={{ fontSize: 20 }}>
+                    {clientOpen ? 'expand_less' : 'expand_more'}
+                  </span>
+                </div>
+              </button>
+
+              {/* 드롭다운 */}
+              {clientOpen && (
+                <div className="absolute z-50 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden"
+                  style={{ top: 'calc(100% + 0.25rem)', maxHeight: '16rem' }}>
+                  {/* 검색창 */}
+                  <div className="border-b border-outline-variant" style={{ padding: '0.5rem' }}>
+                    <div style={{ position: 'relative' }}>
+                      <span className="material-symbols-outlined text-outline" style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: 16 }}>search</span>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="코드 또는 업체명 검색..."
+                        className="w-full bg-surface-container rounded text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                        style={{ padding: '0.375rem 0.5rem 0.375rem 1.75rem', fontSize: '0.8125rem' }}
+                      />
+                    </div>
+                  </div>
+                  {/* 목록 */}
+                  <div style={{ overflowY: 'auto', maxHeight: '12rem' }}>
+                    <div
+                      className="hover:bg-surface-container-low cursor-pointer text-outline transition-colors"
+                      style={{ padding: '0.5rem 0.875rem', fontSize: '0.8125rem' }}
+                      onClick={() => { setClientId(''); setClientOpen(false); }}
+                    >
+                      선택 안 함
+                    </div>
+                    {filteredClients.length === 0 ? (
+                      <div className="text-outline text-center" style={{ padding: '1rem', fontSize: '0.8125rem' }}>검색 결과 없음</div>
+                    ) : filteredClients.map((c) => (
+                      <div
+                        key={c.id}
+                        onClick={() => { setClientId(c.id); setClientOpen(false); }}
+                        className={`cursor-pointer transition-colors flex items-center justify-between ${
+                          clientId === c.id ? 'bg-primary/10 text-primary' : 'hover:bg-surface-container-low text-on-surface'
+                        }`}
+                        style={{ padding: '0.5rem 0.875rem', fontSize: '0.8125rem' }}
+                      >
+                        <span>{c.name}</span>
+                        <span className="font-mono text-outline-variant" style={{ fontSize: '0.75rem' }}>{c.client_code}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -104,7 +178,7 @@ export default function InquiryPage() {
           </div>
 
           {/* AI 안내 카드 */}
-          <div className="relative bg-surface-container rounded-xl overflow-hidden hidden lg:block group" style={{ padding: '1.75rem', minHeight: '12rem' }}>
+          <div className="relative bg-surface-container rounded-xl overflow-hidden hidden lg:block flex-1 group" style={{ padding: '1.75rem' }}>
             <div className="absolute inset-0 bg-gradient-to-br from-primary-container to-tertiary-container opacity-10 group-hover:opacity-20 transition-opacity" />
             <div className="relative z-10" style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
               <div className="w-11 h-11 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
@@ -118,7 +192,7 @@ export default function InquiryPage() {
         </div>
 
         {/* 우측 컬럼: 텍스트에어리어 */}
-        <div className="lg:col-span-8 flex flex-col">
+        <div className="lg:col-span-8 flex flex-col h-full">
           <div className={`${card} flex flex-col h-full`}>
             {/* 헤더 */}
             <div className="border-b border-slate-200 flex justify-between items-center bg-surface-container-lowest rounded-t-xl" style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingTop: '1rem', paddingBottom: '1rem' }}>
@@ -199,69 +273,78 @@ export default function InquiryPage() {
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* 분류 결과 */}
-          <div className={card} style={{ padding: '1.5rem' }}>
-            <h3 className="font-label-md text-label-md text-on-surface mb-4 flex items-center gap-2">
+          <div className={card} style={{ padding: '1.25rem 1.5rem' }}>
+            <h3 className="font-semibold text-on-surface flex items-center gap-2" style={{ fontSize: '0.875rem', marginBottom: '1rem' }}>
               <span className="material-symbols-outlined ms-fill text-emerald-500" style={{ fontSize: 18 }}>check_circle</span>
               분류 결과
             </h3>
-            <div className="flex flex-wrap items-start gap-6">
+            <div className="flex flex-wrap items-start" style={{ gap: '1.5rem' }}>
               <div>
-                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1.5">카테고리</p>
+                <p className="text-on-surface-variant uppercase tracking-wide font-semibold" style={{ fontSize: '0.6875rem', marginBottom: '0.5rem' }}>분류</p>
                 <CategoryBadge category={result.category} />
               </div>
               <div>
-                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1.5">신뢰도</p>
+                <p className="text-on-surface-variant uppercase tracking-wide font-semibold" style={{ fontSize: '0.6875rem', marginBottom: '0.5rem' }}>신뢰도</p>
                 <div className="flex items-center gap-2">
-                  <div className="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
-                    <div className="h-full bg-primary-container rounded-full" style={{ width: `${(result.confidence * 100).toFixed(0)}%` }} />
+                  <div className="rounded-full overflow-hidden bg-surface-container" style={{ width: '6rem', height: '0.375rem' }}>
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${(result.confidence * 100).toFixed(0)}%` }} />
                   </div>
-                  <span className="text-sm font-bold text-on-surface">{(result.confidence * 100).toFixed(0)}%</span>
+                  <span className="font-bold text-on-surface" style={{ fontSize: '0.875rem' }}>{(result.confidence * 100).toFixed(0)}%</span>
                 </div>
               </div>
-              <div className="flex-1 min-w-48">
-                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1.5">AI 요약</p>
-                <p className="text-body-md text-on-surface">{result.summary}</p>
+              <div className="flex-1" style={{ minWidth: '12rem' }}>
+                <p className="text-on-surface-variant uppercase tracking-wide font-semibold" style={{ fontSize: '0.6875rem', marginBottom: '0.5rem' }}>AI 요약</p>
+                <p className="text-on-surface" style={{ fontSize: '0.875rem', lineHeight: '1.5' }}>{result.summary}</p>
               </div>
             </div>
           </div>
 
           {/* 유사 문의 */}
           {result.similar.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined ms-fill text-amber-500" style={{ fontSize: 18 }}>warning</span>
-                유사 문의 {result.similar.length}건 발견
-              </h3>
-              <ul className="space-y-2">
+            <div className={card} style={{ overflow: 'hidden' }}>
+              {/* 헤더 */}
+              <div className="flex items-center gap-2 bg-amber-50 border-b border-amber-100"
+                style={{ padding: '0.75rem 1.25rem' }}>
+                <span className="material-symbols-outlined ms-fill text-amber-500" style={{ fontSize: 18 }}>history</span>
+                <span className="font-semibold text-amber-800" style={{ fontSize: '0.875rem' }}>
+                  유사 문의 {result.similar.length}건 발견
+                </span>
+                <span className="text-amber-600" style={{ fontSize: '0.75rem', marginLeft: 'auto' }}>
+                  이전 처리 이력을 참고하세요
+                </span>
+              </div>
+              {/* 목록 */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {result.similar.map((s, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-amber-700">
-                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-mono text-xs font-bold flex-shrink-0">
+                  <div key={i}
+                    className={`flex items-start gap-3 ${i < result.similar.length - 1 ? 'border-b border-slate-100' : ''}`}
+                    style={{ padding: '0.875rem 1.25rem' }}>
+                    <span className="flex-shrink-0 font-mono font-bold rounded-md bg-amber-100 text-amber-700"
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', marginTop: '0.125rem' }}>
                       {(s.score * 100).toFixed(0)}%
                     </span>
-                    <span className="truncate">{s.content}</span>
-                  </li>
+                    <p className="text-on-surface-variant leading-relaxed"
+                      style={{ fontSize: '0.8125rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {s.content}
+                    </p>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
 
           {/* 초안 */}
           <div>
-            <h3 className="text-base font-semibold text-on-surface mb-4">
-              답변 초안 <span className="text-on-surface-variant font-normal text-sm">({tone} 톤 · 3가지)</span>
+            <h3 className="font-semibold text-on-surface" style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+              답변 초안 <span className="text-on-surface-variant font-normal" style={{ fontSize: '0.875rem' }}>({tone} 톤)</span>
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {result.drafts.map((d) => (
-                <DraftCard
-                  key={d.variant}
-                  inquiryId={result.inquiryId}
-                  variant={d.variant}
-                  content={d.content}
-                  selected={selectedVariant === d.variant}
-                  onSelect={setSelectedVariant}
-                />
-              ))}
-            </div>
+            {result.drafts[0] && (
+              <DraftCard
+                inquiryId={result.inquiryId}
+                variant={result.drafts[0].variant}
+                content={result.drafts[0].content}
+              />
+            )}
           </div>
         </div>
       )}

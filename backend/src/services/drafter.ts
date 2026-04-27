@@ -12,18 +12,12 @@ const TONE_SYSTEM_PROMPTS: Record<ToneType, string> = {
 불필요한 수식어 없이 명확하고 짧게 답변하세요.`,
 };
 
-const VARIANT_SUFFIXES = [
-  '',
-  '\n\n위 답변과 다른 표현 방식으로 새롭게 작성하세요.',
-  '\n\n앞의 두 답변과 완전히 다른 구조와 표현으로 창의적으로 작성하세요.',
-];
-
-export async function generateDrafts(
+export async function generateDraft(
   maskedContent: string,
   category: InquiryCategory,
   tone: ToneType,
   similarExamples: { content: string; draft: string }[] = []
-): Promise<[string, string, string]> {
+): Promise<string> {
   const systemPrompt = TONE_SYSTEM_PROMPTS[tone];
 
   let contextBlock = '';
@@ -36,25 +30,19 @@ export async function generateDrafts(
         .join('\n\n');
   }
 
-  const baseUserPrompt = `[카테고리: ${category}] 다음 고객 문의에 대한 답변 초안을 작성하세요.${contextBlock}
+  const userPrompt = `[카테고리: ${category}] 다음 고객 문의에 대한 답변 초안을 작성하세요.${contextBlock}
 
 [고객 문의]
 ${maskedContent}
 
 답변만 작성하세요 (도입부 설명 없이):`;
 
-  const results = await Promise.all(
-    VARIANT_SUFFIXES.map((suffix, i) =>
-      chatCompletion(
-        [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: baseUserPrompt + suffix },
-        ],
-        0.5 + i * 0.15,
-        800
-      )
-    )
+  return chatCompletion(
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    0.7,
+    800
   );
-
-  return [results[0], results[1], results[2]];
 }

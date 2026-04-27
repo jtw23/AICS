@@ -23,6 +23,29 @@ export function getDb(): Database.Database {
     // inquiries에 client_id 추가
     try { db.exec('ALTER TABLE inquiries ADD COLUMN client_id INTEGER REFERENCES clients(id)'); } catch (_) {}
 
+    // client_assignments: UNIQUE(client_id) → UNIQUE(client_id, department) 마이그레이션
+    try {
+      const cols = db.prepare('PRAGMA table_info(client_assignments)').all() as { name: string }[];
+      if (!cols.find((c) => c.name === 'department')) {
+        db.transaction(() => {
+          db.exec(`CREATE TABLE client_assignments_v2 (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id  INTEGER NOT NULL,
+            employee_id INTEGER NOT NULL,
+            department TEXT NOT NULL CHECK(department IN ('개발팀','기획팀','디자인팀')),
+            UNIQUE(client_id, department),
+            FOREIGN KEY (client_id)   REFERENCES clients(id)   ON DELETE CASCADE,
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+          )`);
+          db.exec(`INSERT OR IGNORE INTO client_assignments_v2 (client_id, employee_id, department)
+            SELECT ca.client_id, ca.employee_id, e.department
+            FROM client_assignments ca JOIN employees e ON e.id = ca.employee_id`);
+          db.exec(`DROP TABLE client_assignments`);
+          db.exec(`ALTER TABLE client_assignments_v2 RENAME TO client_assignments`);
+        })();
+      }
+    } catch (_) {}
+
     // 구 카테고리 삭제 → 새 카테고리로 교체
     db.exec(`DELETE FROM assignees WHERE category IN ('결제','배송','환불','계정')`);
     const insertCat = db.prepare('INSERT OR IGNORE INTO assignees (category) VALUES (?)');
@@ -52,8 +75,8 @@ export function getDb(): Database.Database {
     if (clientCount === 0) {
       const insClient = db.prepare('INSERT INTO clients (client_code, name) VALUES (?, ?)');
       const insAssign = db.prepare(`
-        INSERT OR IGNORE INTO client_assignments (client_id, employee_id)
-        SELECT ?, id FROM employees WHERE name = ?
+        INSERT OR IGNORE INTO client_assignments (client_id, employee_id, department)
+        SELECT ?, id, department FROM employees WHERE name = ?
       `);
 
       const clientData: [string, string, string][] = [
@@ -126,6 +149,33 @@ export function getDb(): Database.Database {
           insAssign.run(result.lastInsertRowid, empName);
         }
       })();
+    }
+
+    // 기획팀·디자인팀 랜덤 배정 (최초 1회)
+    const planDesignSeeded = db
+      .prepare("SELECT value FROM app_settings WHERE key = 'plan_design_assigned'")
+      .get();
+    if (!planDesignSeeded) {
+      const allClients = db.prepare('SELECT id FROM clients').all() as { id: number }[];
+      const kihoekEmps = db
+        .prepare("SELECT id FROM employees WHERE department = '기획팀'")
+        .all() as { id: number }[];
+      const designEmps = db
+        .prepare("SELECT id FROM employees WHERE department = '디자인팀'")
+        .all() as { id: number }[];
+
+      if (kihoekEmps.length > 0 && designEmps.length > 0) {
+        const ins = db.prepare(
+          'INSERT OR IGNORE INTO client_assignments (client_id, employee_id, department) VALUES (?, ?, ?)'
+        );
+        db.transaction(() => {
+          for (const { id: clientId } of allClients) {
+            ins.run(clientId, kihoekEmps[Math.floor(Math.random() * kihoekEmps.length)].id, '기획팀');
+            ins.run(clientId, designEmps[Math.floor(Math.random() * designEmps.length)].id, '디자인팀');
+          }
+        })();
+        db.prepare("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('plan_design_assigned', '1')").run();
+      }
     }
   }
   return db;

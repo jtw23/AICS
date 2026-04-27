@@ -76,17 +76,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── 우측 전체 ── */}
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {/* Top App Bar */}
-        <header className="sticky top-0 z-40 h-20 flex items-center bg-white border-b border-slate-200 flex-shrink-0" style={{ paddingLeft: '2.5rem', paddingRight: '2rem' }}>
-          <div className="hidden md:flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg w-80" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
-            <span className="material-symbols-outlined text-on-surface-variant flex-shrink-0" style={{ fontSize: 18 }}>search</span>
-            <input
-              className="flex-1 border-none bg-transparent text-sm focus:ring-0 outline-none placeholder:text-on-surface-variant text-on-surface"
-              placeholder="검색..."
-              type="text"
-            />
-          </div>
-        </header>
 
         {/* Main Canvas */}
         <main className="flex-1 overflow-y-auto bg-background">

@@ -17,9 +17,11 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
   if (q) {
     // FTS5 키워드 검색
+    const ftsArgs = [q + '*', ...(category ? [category] : [])];
+
     const rows = db
       .prepare(
-        `SELECT i.id, i.content_masked, i.category, i.tone, i.summary, i.created_at
+        `SELECT i.id, i.content_masked, i.category, i.category_confidence, i.tone, i.summary, i.created_at
          FROM inquiries_fts f
          JOIN inquiries i ON i.id = f.rowid
          WHERE inquiries_fts MATCH ?
@@ -27,9 +29,21 @@ router.get('/', (req: AuthRequest, res: Response) => {
          ORDER BY rank
          LIMIT ? OFFSET ?`
       )
-      .all(...([q + '*', ...(category ? [category] : []), parseInt(limit), offset]));
+      .all(...([...ftsArgs, parseInt(limit), offset]));
 
-    res.json({ items: rows, page: parseInt(page) });
+    const total = (
+      db
+        .prepare(
+          `SELECT COUNT(*) as cnt
+           FROM inquiries_fts f
+           JOIN inquiries i ON i.id = f.rowid
+           WHERE inquiries_fts MATCH ?
+           ${category ? 'AND i.category = ?' : ''}`
+        )
+        .get(...ftsArgs) as { cnt: number }
+    ).cnt;
+
+    res.json({ items: rows, total, page: parseInt(page) });
     return;
   }
 

@@ -20,6 +20,7 @@ export default function HistoryPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [category, setCategory] = useState('전체');
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 400);
@@ -39,6 +40,16 @@ export default function HistoryPage() {
   }, [page, debouncedQuery, category]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    if (!confirm(`문의 #${id}를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    setDeletingId(id);
+    try {
+      await api.delete(`/inquiry/${id}`);
+      fetchHistory();
+    } finally { setDeletingId(null); }
+  };
 
   const totalPages = Math.ceil(total / LIMIT);
 
@@ -130,10 +141,9 @@ export default function HistoryPage() {
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
-                  {['문의 ID', '카테고리', '요약 / 내용', '등록일시', '신뢰도', ''].map((h, i) => (
+                  {['문의 ID', '분류', '요약 / 내용', '등록일시', '신뢰도', ''].map((h, i) => (
                     <th key={i} className="text-on-surface-variant uppercase tracking-wider"
-                      style={{ padding: '0.875rem 1.5rem', fontSize: '0.6875rem', fontWeight: 600,
-                        textAlign: i === 5 ? 'right' : 'left' }}>
+                      style={{ padding: '0.875rem 1.5rem', fontSize: '0.6875rem', fontWeight: 600 }}>
                       {h}
                     </th>
                   ))}
@@ -168,12 +178,17 @@ export default function HistoryPage() {
                     <td style={{ padding: '1rem 1.5rem' }}>
                       <ConfidenceBadge value={item.category_confidence} />
                     </td>
-                    <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                    <td style={{ padding: '1rem 1rem', textAlign: 'right', width: '3rem' }}>
                       <button
-                        className="p-2 hover:bg-surface-container rounded-lg transition-colors"
-                        onClick={(e) => { e.stopPropagation(); navigate(`/history/${item.id}`); }}
+                        onClick={(e) => handleDelete(e, item.id)}
+                        disabled={deletingId === item.id}
+                        className="p-1.5 rounded-lg text-outline-variant hover:text-error hover:bg-error-container opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                        title="삭제"
                       >
-                        <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: 20 }}>more_vert</span>
+                        {deletingId === item.id
+                          ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/></svg>
+                          : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                        }
                       </button>
                     </td>
                   </tr>
@@ -240,7 +255,8 @@ export default function HistoryPage() {
   );
 }
 
-function ConfidenceBadge({ value }: { value: number }) {
+function ConfidenceBadge({ value }: { value: number | null | undefined }) {
+  if (value == null) return <span className="text-on-surface-variant" style={{ fontSize: '0.8125rem' }}>—</span>;
   const pct = Math.round(value * 100);
   if (pct >= 80) return (
     <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 rounded-full w-fit"
