@@ -206,7 +206,14 @@ export default function InquiryPage() {
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>clear_all</span>
                 </button>
                 <button
-                  onClick={() => navigator.clipboard.readText().then(setContent)}
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      setContent(text);
+                    } catch {
+                      setError('클립보드 접근 권한이 없습니다. 브라우저 주소창 왼쪽 자물쇠 아이콘에서 클립보드 권한을 허용해 주세요.');
+                    }
+                  }}
                   className="p-1.5 text-on-surface-variant hover:text-primary transition-colors rounded"
                   title="붙여넣기"
                 >
