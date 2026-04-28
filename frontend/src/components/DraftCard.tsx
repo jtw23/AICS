@@ -17,16 +17,20 @@ export default function DraftCard({ content, selected }: Props) {
 
   const handleCopy = async () => {
     try {
-      const htmlBlob = new Blob([html], { type: 'text/html' });
-      const textBlob = new Blob([content], { type: 'text/plain' });
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob }),
-      ]);
+      try {
+        const htmlBlob = new Blob([html], { type: 'text/html' });
+        const textBlob = new Blob([content], { type: 'text/plain' });
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob }),
+        ]);
+      } catch {
+        await navigator.clipboard.writeText(content);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
-      await navigator.clipboard.writeText(content);
+      // clipboard 권한 없음 — 조용히 무시
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
