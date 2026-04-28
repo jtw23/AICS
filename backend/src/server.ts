@@ -12,7 +12,7 @@ import settingsRouter from './routes/settings';
 const app = express();
 const PORT = process.env.PORT ?? 4000;
 
-app.use(cors({ origin: process.env.FRONTEND_URL ?? 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : true, credentials: true }));
 app.use(express.json());
 
 // DB 초기화
@@ -26,6 +26,6 @@ app.use('/api/settings', settingsRouter);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`[AICS] 서버 실행 중: http://localhost:${PORT}`);
 });

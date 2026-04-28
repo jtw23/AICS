@@ -61,6 +61,7 @@ export async function chatCompletion(
           messages,
           temperature,
           max_tokens: maxTokens,
+          ...(model.startsWith('deepseek/') && { reasoning: {} }),
         }),
       });
 
